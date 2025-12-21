@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Dalamud.NET.Sdk/13.0.0">
+<Project Sdk="Dalamud.NET.Sdk/14.0.0">
     <PropertyGroup>
 <!--        <UmbraLibPath>Z:\FFXIV-plugins\una-xiv-plugins\Umbra\out\Release\</UmbraLibPath>-->
-        <UmbraLibPath>$([System.IO.Directory]::GetDirectories($(appdata)\XIVLauncher\installedPlugins\Umbra\)[0])\</UmbraLibPath> 
+        <UmbraLibPath>$([System.IO.Directory]::GetDirectories($(appdata)\XIVLauncher\installedPlugins\Umbra\)[0])\</UmbraLibPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -13,7 +13,7 @@
     <PropertyGroup>
         <Authors>Una</Authors>
         <Company>Una</Company>
-        <Version>1.0.2</Version>
+        <Version>1.0.3</Version>
         <ProductName>CounterSpy Plugin</ProductName>
         <Description>Shows who/what is targeting you.</Description>
         <Copyright>(C)2025</Copyright>
