@@ -12,7 +12,6 @@ namespace Umbra.CounterSpyPlugin;
 
 [Service]
 internal sealed class CounterSpyRepository(
-    IClientState clientState,
     IObjectTable objectTable,
     IPlayer      player
 ) : IDisposable
@@ -43,7 +42,7 @@ internal sealed class CounterSpyRepository(
     [OnTick]
     private void OnTick()
     {
-        if (null == clientState.LocalPlayer) return;
+        if (null == objectTable.LocalPlayer) return;
 
         lock (_objects) {
             if (player.IsBetweenAreas || player.IsInCutscene) {
@@ -51,8 +50,8 @@ internal sealed class CounterSpyRepository(
                 return;
             }
 
-            ulong       playerId  = clientState.LocalPlayer.GameObjectId;
-            Vector3     playerPos = clientState.LocalPlayer.Position;
+            ulong       playerId  = objectTable.LocalPlayer.GameObjectId;
+            Vector3     playerPos = objectTable.LocalPlayer.Position;
             List<ulong> ids       = [];
 
             // Sort objects by distance to player.
