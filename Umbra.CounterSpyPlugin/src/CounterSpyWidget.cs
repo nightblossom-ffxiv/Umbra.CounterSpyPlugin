@@ -58,11 +58,9 @@ public class CounterSpyWidget(
         var npcList     = Repository.GetTargets(false, showNpcs);
         var isEmpty     = playerList.Count == 0 && npcList.Count == 0;
 
-        var iconId = playerList.Count > 0
-            ? (uint)GetConfigValue<int>("PlayerIconId")
-            : npcList.Count > 0
-                ? (uint)GetConfigValue<int>("NPCIconId")
-                : 0u;
+        var iconId = npcList.Count > 0 && playerList.Count == 0
+            ? (uint)GetConfigValue<int>("NPCIconId")
+            : (uint)GetConfigValue<int>("PlayerIconId");
 
         SetGameIconId(iconId);
 
@@ -75,8 +73,6 @@ public class CounterSpyWidget(
         var playersLabel = showPlayersCfg ? $"Players: {playerList.Count}" : "";
         var npcLabel     = showNpcsCfg    ? $"NPCs: {npcList.Count}"       : "";
         SetText($"{playersLabel} {npcLabel}".Trim());
-
-        if (isEmpty) ClearIcon();
 
         UpdateMenuItems(playerList, _playerGroup);
         UpdateMenuItems(npcList, _npcGroup);
