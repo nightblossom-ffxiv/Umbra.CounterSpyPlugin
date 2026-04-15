@@ -18,7 +18,8 @@ internal sealed class CounterSpyRepository(
     CounterSpyHistoryStore   history
 ) : IDisposable
 {
-    private readonly Dictionary<ulong, IGameObject> _objects = [];
+    private readonly Dictionary<ulong, IGameObject>               _objects   = [];
+    private readonly Dictionary<ulong, (string Name, string World)> _snapshots = [];
 
     public bool IsPreviewMode { get; set; }
 
@@ -48,6 +49,7 @@ internal sealed class CounterSpyRepository(
 
         lock (_objects) {
             if (player.IsBetweenAreas || player.IsInCutscene) {
+                FlushSnapshotsToHistory();
                 _objects.Clear();
                 return;
             }
@@ -79,23 +81,36 @@ internal sealed class CounterSpyRepository(
                         } catch {
                             // World lookup can fail for cross-world players in some zones
                         }
-                        history.Record(pc.Name.TextValue, worldName);
+                        _snapshots[obj.GameObjectId] = (pc.Name.TextValue, worldName);
                     }
 
                     _objects[obj.GameObjectId] = obj;
                 }
             }
 
-            foreach (ulong obj in _objects.Keys.ToArray()) {
-                if (!ids.Contains(obj)) {
-                    _objects.Remove(obj);
+            foreach (ulong id in _objects.Keys.ToArray()) {
+                if (!ids.Contains(id)) {
+                    if (_snapshots.TryGetValue(id, out var snap)) {
+                        history.Record(snap.Name, snap.World);
+                        _snapshots.Remove(id);
+                    }
+                    _objects.Remove(id);
                 }
             }
         }
     }
 
+    private void FlushSnapshotsToHistory()
+    {
+        foreach (var snap in _snapshots.Values) {
+            history.Record(snap.Name, snap.World);
+        }
+        _snapshots.Clear();
+    }
+
     public void Dispose()
     {
         _objects.Clear();
+        _snapshots.Clear();
     }
 }

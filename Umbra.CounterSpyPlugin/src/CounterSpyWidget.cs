@@ -38,6 +38,7 @@ public class CounterSpyWidget(
     private CounterSpyHistoryStore History       { get; } = Framework.Service<CounterSpyHistoryStore>();
     private IPlayer                Player        { get; } = Framework.Service<IPlayer>();
     private ITargetManager         TargetManager { get; } = Framework.Service<ITargetManager>();
+    private IObjectTable           ObjectTable   { get; } = Framework.Service<IObjectTable>();
 
     protected override void OnLoad()
     {
@@ -98,12 +99,14 @@ public class CounterSpyWidget(
                 : $"{entry.Name} @ {entry.World}";
             var age = FormatAge(DateTime.UtcNow - entry.LastSeenUtc);
 
+            var entryRef = entry;
             if (!_historyButtons.TryGetValue(id, out var button))
             {
                 button = new MenuPopup.Button(label)
                 {
                     AltText   = age,
                     SortIndex = i,
+                    OnClick   = () => TargetByHistoryEntry(entryRef),
                 };
                 _historyButtons[id] = button;
                 _recentGroup.Add(button);
@@ -121,6 +124,27 @@ public class CounterSpyWidget(
             {
                 _recentGroup.Remove(btn);
                 _historyButtons.Remove(id);
+            }
+        }
+    }
+
+    private void TargetByHistoryEntry(TargetHistoryEntry entry)
+    {
+        foreach (var obj in ObjectTable)
+        {
+            if (obj is IPlayerCharacter p
+                && p.Name.TextValue == entry.Name)
+            {
+                if (!string.IsNullOrEmpty(entry.World))
+                {
+                    string worldName;
+                    try { worldName = p.HomeWorld.Value.Name.ToString(); }
+                    catch { continue; }
+                    if (worldName != entry.World) continue;
+                }
+
+                TargetManager.Target = obj;
+                return;
             }
         }
     }
