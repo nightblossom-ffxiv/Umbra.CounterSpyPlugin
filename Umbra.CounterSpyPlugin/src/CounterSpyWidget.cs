@@ -68,17 +68,14 @@ public class CounterSpyWidget(
         IsVisible = !(isEmpty && GetConfigValue<bool>("HideIfEmpty"));
         if (!IsVisible) return;
 
-        if (isEmpty)
-        {
-            SetText("0");
-            ClearIcon();
-        }
-        else
-        {
-            var playersLabel = playerList.Count > 0 ? $"Players: {playerList.Count}" : "";
-            var npcLabel     = npcList.Count > 0 ? $"NPCs {npcList.Count}" : "";
-            SetText($"{playersLabel} {npcLabel}".Trim());
-        }
+        var showPlayersCfg = GetConfigValue<bool>("ShowPlayers");
+        var showNpcsCfg    = GetConfigValue<bool>("ShowNPCs");
+
+        var playersLabel = showPlayersCfg ? $"Players: {playerList.Count}" : "";
+        var npcLabel     = showNpcsCfg    ? $"NPCs: {npcList.Count}"       : "";
+        SetText($"{playersLabel} {npcLabel}".Trim());
+
+        if (isEmpty) ClearIcon();
 
         UpdateMenuItems(playerList, _playerGroup);
         UpdateMenuItems(npcList, _npcGroup);
@@ -101,18 +98,21 @@ public class CounterSpyWidget(
                 : $"{entry.Name} @ {entry.World}";
             var age = FormatAge(DateTime.UtcNow - entry.LastSeenUtc);
 
-            if (_historyButtons.TryGetValue(id, out var existing))
+            if (!_historyButtons.TryGetValue(id, out var button))
             {
-                _recentGroup.Remove(existing);
+                button = new MenuPopup.Button(label)
+                {
+                    AltText   = age,
+                    SortIndex = i,
+                };
+                _historyButtons[id] = button;
+                _recentGroup.Add(button);
             }
-
-            var button = new MenuPopup.Button(label)
+            else
             {
-                AltText   = age,
-                SortIndex = i,
-            };
-            _historyButtons[id] = button;
-            _recentGroup.Add(button);
+                button.AltText   = age;
+                button.SortIndex = i;
+            }
         }
 
         foreach (var (id, btn) in _historyButtons.ToDictionary())
