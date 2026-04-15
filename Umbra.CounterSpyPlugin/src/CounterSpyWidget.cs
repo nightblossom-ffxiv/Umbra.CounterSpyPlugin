@@ -81,12 +81,25 @@ public class CounterSpyWidget(
 
     private void UpdateHistoryItems()
     {
-        var entries = History.GetAll();
+        var entries     = History.GetAll();
+        var currentKeys = new HashSet<string>();
+        foreach (var t in Repository.GetTargets(true, false))
+        {
+            if (t is IPlayerCharacter pc)
+            {
+                string w = "";
+                try { w = pc.HomeWorld.Value.Name.ToString(); } catch { }
+                currentKeys.Add($"{pc.Name.TextValue}@{w}");
+            }
+        }
+
         var usedIds = new List<string>();
 
         for (int i = 0; i < entries.Count; i++)
         {
             var entry = entries[i];
+            if (currentKeys.Contains($"{entry.Name}@{entry.World}")) continue;
+
             var id    = $"hist_{entry.Name}@{entry.World}";
             usedIds.Add(id);
 
