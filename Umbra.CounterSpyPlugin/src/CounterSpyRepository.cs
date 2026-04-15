@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 using Umbra.Common;
@@ -12,8 +13,9 @@ namespace Umbra.CounterSpyPlugin;
 
 [Service]
 internal sealed class CounterSpyRepository(
-    IObjectTable objectTable,
-    IPlayer      player
+    IObjectTable             objectTable,
+    IPlayer                  player,
+    CounterSpyHistoryStore   history
 ) : IDisposable
 {
     private readonly Dictionary<ulong, IGameObject> _objects = [];
@@ -67,6 +69,19 @@ internal sealed class CounterSpyRepository(
                     && !obj.IsDead
                    ) {
                     ids.Add(obj.GameObjectId);
+
+                    if (!_objects.ContainsKey(obj.GameObjectId)
+                        && obj.ObjectKind == ObjectKind.Player
+                        && obj is IPlayerCharacter pc) {
+                        string worldName = "";
+                        try {
+                            worldName = pc.HomeWorld.Value.Name.ToString();
+                        } catch {
+                            // World lookup can fail for cross-world players in some zones
+                        }
+                        history.Record(pc.Name.TextValue, worldName);
+                    }
+
                     _objects[obj.GameObjectId] = obj;
                 }
             }

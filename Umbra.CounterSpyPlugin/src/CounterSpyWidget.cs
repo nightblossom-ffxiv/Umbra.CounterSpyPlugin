@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game.ClientState.Objects.SubKinds;
@@ -27,18 +28,22 @@ public class CounterSpyWidget(
         StandardWidgetFeatures.Text |
         StandardWidgetFeatures.Icon;
 
-    private readonly Dictionary<string, Dictionary<string, MenuPopup.Button>> _menuItems   = [];
-    private readonly MenuPopup.Group                                          _playerGroup = new("Players");
-    private readonly MenuPopup.Group                                          _npcGroup    = new("NPCs");
+    private readonly Dictionary<string, Dictionary<string, MenuPopup.Button>> _menuItems      = [];
+    private readonly Dictionary<string, MenuPopup.Button>                     _historyButtons = [];
+    private readonly MenuPopup.Group                                          _playerGroup    = new("Players");
+    private readonly MenuPopup.Group                                          _npcGroup       = new("NPCs");
+    private readonly MenuPopup.Group                                          _recentGroup    = new("Recent");
 
-    private CounterSpyRepository Repository    { get; } = Framework.Service<CounterSpyRepository>();
-    private IPlayer              Player        { get; } = Framework.Service<IPlayer>();
-    private ITargetManager       TargetManager { get; } = Framework.Service<ITargetManager>();
+    private CounterSpyRepository   Repository    { get; } = Framework.Service<CounterSpyRepository>();
+    private CounterSpyHistoryStore History       { get; } = Framework.Service<CounterSpyHistoryStore>();
+    private IPlayer                Player        { get; } = Framework.Service<IPlayer>();
+    private ITargetManager         TargetManager { get; } = Framework.Service<ITargetManager>();
 
     protected override void OnLoad()
     {
         Popup.Add(_playerGroup);
         Popup.Add(_npcGroup);
+        Popup.Add(_recentGroup);
 
         _menuItems["Players"] = [];
         _menuItems["NPCs"]    = [];
@@ -63,31 +68,69 @@ public class CounterSpyWidget(
         IsVisible = !(isEmpty && GetConfigValue<bool>("HideIfEmpty"));
         if (!IsVisible) return;
 
-        if (playerList.Count == 0 && npcList.Count == 0)
+        if (isEmpty)
         {
-            SetText("No targets");
+            SetText("0");
             ClearIcon();
-            return;
         }
-
-        var playersLabel = "";
-        var npcLabel     = "";
-
-        if (playerList.Count > 0)
+        else
         {
-            playersLabel = $"Players: {playerList.Count}";
+            var playersLabel = playerList.Count > 0 ? $"Players: {playerList.Count}" : "";
+            var npcLabel     = npcList.Count > 0 ? $"NPCs {npcList.Count}" : "";
+            SetText($"{playersLabel} {npcLabel}".Trim());
         }
-
-        if (npcList.Count > 0)
-        {
-            npcLabel = $"NPCs {npcList.Count}";
-        }
-
-        var label = $"{playersLabel} {npcLabel}";
-        SetText(label.Trim());
 
         UpdateMenuItems(playerList, _playerGroup);
         UpdateMenuItems(npcList, _npcGroup);
+        UpdateHistoryItems();
+    }
+
+    private void UpdateHistoryItems()
+    {
+        var entries = History.GetAll();
+        var usedIds = new List<string>();
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
+            var id    = $"hist_{entry.Name}@{entry.World}";
+            usedIds.Add(id);
+
+            var label = string.IsNullOrEmpty(entry.World)
+                ? entry.Name
+                : $"{entry.Name} @ {entry.World}";
+            var age = FormatAge(DateTime.UtcNow - entry.LastSeenUtc);
+
+            if (_historyButtons.TryGetValue(id, out var existing))
+            {
+                _recentGroup.Remove(existing);
+            }
+
+            var button = new MenuPopup.Button(label)
+            {
+                AltText   = age,
+                SortIndex = i,
+            };
+            _historyButtons[id] = button;
+            _recentGroup.Add(button);
+        }
+
+        foreach (var (id, btn) in _historyButtons.ToDictionary())
+        {
+            if (!usedIds.Contains(id))
+            {
+                _recentGroup.Remove(btn);
+                _historyButtons.Remove(id);
+            }
+        }
+    }
+
+    private static string FormatAge(TimeSpan t)
+    {
+        if (t.TotalSeconds < 60) return $"{(int)t.TotalSeconds}s ago";
+        if (t.TotalMinutes < 60) return $"{(int)t.TotalMinutes}m ago";
+        if (t.TotalHours   < 24) return $"{(int)t.TotalHours}h ago";
+        return $"{(int)t.TotalDays}d ago";
     }
 
     private void UpdateMenuItems(List<IGameObject> list, MenuPopup.Group group)
@@ -140,7 +183,7 @@ public class CounterSpyWidget(
                 "HideIfEmpty",
                 "Hide the widget if nothing targets you.",
                 "Hide the widget if there are no players or NPCs are currently targeting you.",
-                true
+                false
             ),
             new BooleanWidgetConfigVariable(
                 "ShowPlayers",

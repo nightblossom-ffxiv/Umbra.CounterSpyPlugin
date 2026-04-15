@@ -11,13 +11,13 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Authors>Una</Authors>
-        <Company>Una</Company>
-        <Version>1.3.4</Version>
-        <ProductName>CounterSpy Plugin</ProductName>
-        <Description>Shows who/what is targeting you.</Description>
+        <Authors>Una, Dante L'orgie</Authors>
+        <Company>nightblossom-ffxiv</Company>
+        <Version>1.3.5</Version>
+        <ProductName>CounterSpy Plugin (Nightblossom fork)</ProductName>
+        <Description>Shows who/what is targeting you, with a history of recent players.</Description>
         <Copyright>(C)2025</Copyright>
-        <PackageProjectUrl>https://github.com/una-xiv/umbra</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/nightblossom-ffxiv/Umbra.CounterSpyPlugin</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
